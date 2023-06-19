@@ -12,18 +12,21 @@ const sketch = () => {
   const shapeCount = 40;
   const shapeMinSides = 3;
   const shapeMaxSides = 9;
-  const shapeSize = 50;
+  const shapeMinSize = 20;
+  const shapeMaxSize = 100;
 
   const shapes = [];
 
   // Generate random shapes
   for (let i = 0; i < shapeCount; i++) {
-    const x = random.range(shapeSize, settings.dimensions[0] - shapeSize);
-    const y = random.range(shapeSize, settings.dimensions[1] - shapeSize);
+    const x = random.range(shapeMaxSize, settings.dimensions[0] - shapeMaxSize);
+    const y = random.range(shapeMaxSize, settings.dimensions[1] - shapeMaxSize);
     const sides = random.range(shapeMinSides, shapeMaxSides + 1);
+    const size = random.range(shapeMinSize, shapeMaxSize + 1);
     const directionX = random.pick([-1, 1]);
     const directionY = random.pick([-1, 1]);
-    const color = random.pick(risoColors).hex;
+    const fillColor = random.pick(risoColors).hex;
+    const strokeColor = random.pick(risoColors).hex;
     const isSpinning = false;
     const rotationSpeed = random.range(0.1, 0.5);
 
@@ -31,9 +34,11 @@ const sketch = () => {
       x,
       y,
       sides,
+      size,
       directionX,
       directionY,
-      color,
+      fillColor,
+      strokeColor,
       isSpinning,
       rotation: 0,
       rotationSpeed,
@@ -41,7 +46,7 @@ const sketch = () => {
   }
 
   const drawShape = (context, shape) => {
-    const { x, y, sides, directionX, directionY, color, isSpinning, rotation, rotationSpeed } = shape;
+    const { x, y, sides, size, directionX, directionY, fillColor, strokeColor, isSpinning, rotation, rotationSpeed } = shape;
 
     // Update x position based on direction
     const speed = 100;
@@ -49,7 +54,7 @@ const sketch = () => {
     shape.x += deltaX;
 
     // Reverse direction if shape hits the canvas borders on the x-axis
-    if (shape.x < shapeSize || shape.x > settings.dimensions[0] - shapeSize) {
+    if (shape.x < size || shape.x > settings.dimensions[0] - size) {
       shape.directionX *= -1;
     }
 
@@ -58,7 +63,7 @@ const sketch = () => {
     shape.y += deltaY;
 
     // Reverse direction if shape hits the canvas borders on the y-axis
-    if (shape.y < shapeSize || shape.y > settings.dimensions[1] - shapeSize) {
+    if (shape.y < size || shape.y > settings.dimensions[1] - size) {
       shape.directionY *= -1;
     }
 
@@ -68,7 +73,7 @@ const sketch = () => {
     }
 
     // Draw shape
-    const radius = shapeSize / 2;
+    const radius = size / 2;
     const angle = (Math.PI * 2) / sides;
 
     context.save();
@@ -86,8 +91,13 @@ const sketch = () => {
     context.closePath();
 
     // Set shape fill style
-    context.fillStyle = color;
+    context.fillStyle = fillColor;
     context.fill();
+
+    // Set shape stroke style
+    context.strokeStyle = strokeColor;
+    context.lineWidth = 2;
+    context.stroke();
 
     context.restore();
   };
@@ -96,8 +106,8 @@ const sketch = () => {
     const { offsetX, offsetY } = event;
 
     shapes.forEach((shape) => {
-      const { x, y, isSpinning } = shape;
-      const radius = shapeSize / 2;
+      const { x, y, isSpinning, size } = shape;
+      const radius = size / 2;
 
       // Check if the click is inside the shape
       if (
@@ -106,7 +116,7 @@ const sketch = () => {
         offsetY >= y - radius &&
         offsetY <= y + radius
       ) {
-        shape.color = random.pick(risoColors).hex; // Change color when clicked
+        shape.fillColor = random.pick(risoColors).hex; // Change fill color when clicked
         shape.isSpinning = !isSpinning; // Toggle spinning state
         shape.rotation = 0; // Reset rotation
       }
