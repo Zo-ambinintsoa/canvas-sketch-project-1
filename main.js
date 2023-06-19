@@ -16,6 +16,7 @@ const sketch = () => {
   const shapeMinSize = 20;
   const shapeMaxSize = 100;
   const shapeRadius = shapeMaxSize / 2;
+  const stopSpinningTime = 10000; // 10 seconds in milliseconds
 
   const shapes = [];
 
@@ -39,9 +40,10 @@ const sketch = () => {
     const direction = random.pick([-1, 1]);
     const fillColor = random.pick(risoColors).hex;
     const strokeColor = random.pick(risoColors).hex;
-    const isSpinning = false;
     const rotationSpeed = random.range(0.1, 0.5);
     const velocity = [random.range(-1, 1), random.range(-1, 1)];
+    let timer = stopSpinningTime;
+    let isSpinning = false;
 
     shapes.push({
       position: [x, y],
@@ -50,10 +52,11 @@ const sketch = () => {
       direction,
       fillColor,
       strokeColor,
-      isSpinning,
       rotation: 0,
       rotationSpeed,
       velocity,
+      timer,
+      isSpinning,
     });
   }
 
@@ -77,8 +80,8 @@ const sketch = () => {
     return path;
   };
 
-  const updateShape = (shape) => {
-    const { position, size, direction, velocity } = shape;
+  const updateShape = (shape, index) => {
+    const { position, size, velocity, rotationSpeed, timer, isSpinning } = shape;
 
     // Update position based on velocity
     const speed = 0.1;
@@ -86,23 +89,62 @@ const sketch = () => {
     position[1] += velocity[1] * speed;
 
     // Reverse direction if shape hits the canvas borders
-    const radius = size / 2;
     const minX = shapeRadius;
     const maxX = settings.dimensions[0] - shapeRadius;
     const minY = shapeRadius;
     const maxY = settings.dimensions[1] - shapeRadius;
 
-    if (position[0] < minX || position[0] > maxX) {
+    const radius = size / 2;
+    const borderMinX = position[0] - radius;
+    const borderMaxX = position[0] + radius;
+    const borderMinY = position[1] - radius;
+    const borderMaxY = position[1] + radius;
+
+    if (borderMinX < minX || borderMaxX > maxX) {
       velocity[0] *= -1;
     }
 
-    if (position[1] < minY || position[1] > maxY) {
+    if (borderMinY < minY || borderMaxY > maxY) {
       velocity[1] *= -1;
     }
 
+    // Check for collisions with other shapes
+    for (let i = index + 1; i < shapes.length; i++) {
+      const otherShape = shapes[i];
+      const otherRadius = otherShape.size / 2;
+      const otherBorderMinX = otherShape.position[0] - otherRadius;
+      const otherBorderMaxX = otherShape.position[0] + otherRadius;
+      const otherBorderMinY = otherShape.position[1] - otherRadius;
+      const otherBorderMaxY = otherShape.position[1] + otherRadius;
+
+      if (
+        borderMaxX > otherBorderMinX &&
+        borderMinX < otherBorderMaxX &&
+        borderMaxY > otherBorderMinY &&
+        borderMinY < otherBorderMaxY
+      ) {
+        // Collision detected, reverse velocities
+        velocity[0] *= -1;
+        velocity[1] *= -1;
+        otherShape.velocity[0] *= -1;
+        otherShape.velocity[1] *= -1;
+      }
+    }
+
     // Apply spinning rotation if enabled
-    if (shape.isSpinning) {
-      shape.rotation += shape.rotationSpeed;
+    if (isSpinning) {
+      shape.rotation += rotationSpeed;
+    }
+
+    // Update timer only if shape is spinning
+    if (isSpinning) {
+      shape.timer -= 1000 / 60; // Assuming 60 FPS
+      if (shape.timer <= 0) {
+        shape.rotationSpeed *= 0.95; // Gradually decrease rotation speed
+        if (shape.rotationSpeed < 0.01) {
+          shape.rotationSpeed = 0; // Stop spinning when rotation speed is very low
+        }
+      }
     }
   };
 
@@ -128,19 +170,25 @@ const sketch = () => {
     const { offsetX, offsetY } = event;
 
     shapes.forEach((shape) => {
-      const { position, size, isSpinning } = shape;
+      const { position, size, timer } = shape;
       const radius = size / 2;
+      const borderMinX = position[0] - radius;
+      const borderMaxX = position[0] + radius;
+      const borderMinY = position[1] - radius;
+      const borderMaxY = position[1] + radius;
 
-      // Check if the click is inside the shape
+      // Check if the click is inside the shape's border
       if (
-        offsetX >= position[0] - radius &&
-        offsetX <= position[0] + radius &&
-        offsetY >= position[1] - radius &&
-        offsetY <= position[1] + radius
+        offsetX >= borderMinX &&
+        offsetX <= borderMaxX &&
+        offsetY >= borderMinY &&
+        offsetY <= borderMaxY
       ) {
         shape.fillColor = random.pick(risoColors).hex; // Change fill color when clicked
-        shape.isSpinning = !isSpinning; // Toggle spinning state
+        shape.rotationSpeed = random.range(0.1, 0.5); // Randomize rotation speed
         shape.rotation = 0; // Reset rotation
+        shape.timer = stopSpinningTime; // Reset timer
+        shape.isSpinning = !shape.isSpinning; // Start spinning
       }
     });
   };
@@ -153,8 +201,8 @@ const sketch = () => {
     context.canvas.addEventListener('click', handleShapeClick);
 
     // Update and draw shapes
-    shapes.forEach((shape) => {
-      updateShape(shape);
+    shapes.forEach((shape, index) => {
+      updateShape(shape, index);
       drawShape(context, shape);
     });
   };
