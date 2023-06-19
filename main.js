@@ -22,6 +22,7 @@ const sketch = () => {
     const directionY = random.pick([-1, 1]); // Randomly determine the initial direction on the y-axis
     const color = random.pick(risoColors).hex;
     const isSpinning = false;
+    const rotationSpeed = random.range(0.1, 0.5); // Increase rotation speed
 
     triangles.push({
       x,
@@ -30,29 +31,60 @@ const sketch = () => {
       directionY,
       color,
       isSpinning,
+      rotationSpeed,
     });
   }
 
-  // Function to draw a triangle
-  const drawTriangle = (context, x, y, color) => {
+  const drawTriangle = (context, triangle) => {
+    const { x, y, directionX, directionY, color, isSpinning, rotationSpeed } = triangle;
+
+    // Update x position based on direction
+    const speed = 100; // Adjust the speed of the animation
+    const deltaX = directionX * speed / settings.dimensions[0];
+    triangle.x += deltaX;
+
+    // Reverse direction if triangle hits the canvas borders on the x-axis
+    if (triangle.x < triangleSize || triangle.x > settings.dimensions[0] - triangleSize) {
+      triangle.directionX *= -1;
+    }
+
+    // Update y position based on direction
+    const deltaY = directionY * speed / settings.dimensions[1];
+    triangle.y += deltaY;
+
+    // Reverse direction if triangle hits the canvas borders on the y-axis
+    if (triangle.y < triangleSize || triangle.y > settings.dimensions[1] - triangleSize) {
+      triangle.directionY *= -1;
+    }
+
+    // Apply spinning rotation if enabled
+    if (isSpinning) {
+      triangle.rotation += rotationSpeed;
+    }
+
+    // Draw triangle
     const halfSize = triangleSize / 2;
+    context.save();
+    context.translate(x, y);
+    context.rotate(triangle.rotation);
     context.beginPath();
-    context.moveTo(x, y - halfSize);
-    context.lineTo(x + halfSize, y + halfSize);
-    context.lineTo(x - halfSize, y + halfSize);
+    context.moveTo(0, -halfSize);
+    context.lineTo(halfSize, halfSize);
+    context.lineTo(-halfSize, halfSize);
     context.closePath();
 
     // Set triangle fill style
     context.fillStyle = color;
     context.fill();
+
+    context.restore();
   };
 
-  // Function to handle triangle click event
   const handleTriangleClick = (event) => {
     const { offsetX, offsetY } = event;
 
     triangles.forEach((triangle) => {
-      const { x, y } = triangle;
+      const { x, y, isSpinning, color } = triangle;
       const halfSize = triangleSize / 2;
 
       // Check if the click is inside the triangle
@@ -62,65 +94,26 @@ const sketch = () => {
         offsetY >= y - halfSize &&
         offsetY <= y + halfSize
       ) {
-        triangle.isSpinning = !triangle.isSpinning; // Toggle spinning state
+        triangle.color = random.pick(risoColors).hex; // Change color when clicked
+        if (!isSpinning) {
+          triangle.isSpinning = true; // Start spinning
+          triangle.rotation = 0; // Reset rotation
+        }
       }
     });
   };
 
-  // Function to animate the sketch
-  const animate = ({ context, width, height }) => {
+  return ({ context, width, height }) => {
     // Clear canvas
     context.clearRect(0, 0, width, height);
 
+    // Add event listener to canvas
+    context.canvas.addEventListener('click', handleTriangleClick);
+
     // Draw triangles
     triangles.forEach((triangle) => {
-      const { x, y, directionX, directionY, color, isSpinning } = triangle;
-
-      // Update x position based on direction
-      const speed = .5;
-      const deltaX = directionX * speed;
-      triangle.x += deltaX;
-
-      // Reverse direction if triangle hits the canvas borders on the x-axis
-      if (triangle.x < triangleSize || triangle.x > settings.dimensions[0] - triangleSize) {
-        triangle.directionX *= -1;
-      }
-
-      // Update y position based on direction
-      const deltaY = directionY * speed;
-      triangle.y += deltaY;
-
-      // Reverse direction if triangle hits the canvas borders on the y-axis
-      if (triangle.y < triangleSize || triangle.y > settings.dimensions[1] - triangleSize) {
-        triangle.directionY *= -1;
-      }
-
-      // Draw the triangle
-      drawTriangle(context, x, y, color);
-
-      // Rotate the triangle if spinning is enabled
-      if (isSpinning) {
-        context.translate(x, y);
-        context.rotate(0.02);
-        context.translate(-x, -y);
-      }
+      drawTriangle(context, triangle);
     });
-  };
-
-  // Function to set up event listeners
-  const setupEventListeners = ({ canvas }) => {
-    canvas.addEventListener('click', handleTriangleClick);
-  };
-
-  return {
-    render({ context, width, height }) {
-      animate({ context, width, height });
-    },
-    resize() {},
-    unload() {},
-    setup({ context, width, height, canvas }) {
-      setupEventListeners({ canvas });
-    },
   };
 };
 
