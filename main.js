@@ -16,13 +16,12 @@ const sketch = () => {
 
   // Generate random triangles
   for (let i = 0; i < triangleCount; i++) {
-    const x = random.range(triangleSize, settings.dimensions[0] - triangleSize); // Randomize x position within canvas bounds
-    const y = random.range(triangleSize, settings.dimensions[1] - triangleSize); // Randomize y position within canvas bounds
-    const directionX = random.pick([-1, 1]); // Randomly determine the initial direction on the x-axis
-    const directionY = random.pick([-1, 1]); // Randomly determine the initial direction on the y-axis
+    const x = random.range(triangleSize, settings.dimensions[0] - triangleSize);
+    const y = random.range(triangleSize, settings.dimensions[1] - triangleSize);
+    const directionX = random.pick([-1, 1]);
+    const directionY = random.pick([-1, 1]);
     const color = random.pick(risoColors).hex;
-    const isSpinning = false;
-    const rotationSpeed = random.range(0.1, 0.5); // Increase rotation speed
+    let rotationSpeed = random.range(0.1, 0.5);
 
     triangles.push({
       x,
@@ -30,16 +29,17 @@ const sketch = () => {
       directionX,
       directionY,
       color,
-      isSpinning,
+      isSpinning: false,
+      rotation: 0,
       rotationSpeed,
     });
   }
 
   const drawTriangle = (context, triangle) => {
-    const { x, y, directionX, directionY, color, isSpinning, rotationSpeed } = triangle;
+    const { x, y, directionX, directionY, color, isSpinning, rotation, rotationSpeed } = triangle;
 
     // Update x position based on direction
-    const speed = 100; // Adjust the speed of the animation
+    const speed = 100;
     const deltaX = directionX * speed / settings.dimensions[0];
     triangle.x += deltaX;
 
@@ -66,7 +66,7 @@ const sketch = () => {
     const halfSize = triangleSize / 2;
     context.save();
     context.translate(x, y);
-    context.rotate(triangle.rotation);
+    context.rotate(rotation);
     context.beginPath();
     context.moveTo(0, -halfSize);
     context.lineTo(halfSize, halfSize);
@@ -84,7 +84,7 @@ const sketch = () => {
     const { offsetX, offsetY } = event;
 
     triangles.forEach((triangle) => {
-      const { x, y, isSpinning, color } = triangle;
+      const { x, y, isSpinning } = triangle;
       const halfSize = triangleSize / 2;
 
       // Check if the click is inside the triangle
@@ -95,10 +95,7 @@ const sketch = () => {
         offsetY <= y + halfSize
       ) {
         triangle.color = random.pick(risoColors).hex; // Change color when clicked
-        if (!isSpinning) {
-          triangle.isSpinning = true; // Start spinning
-          triangle.rotation = 0; // Reset rotation
-        }
+        triangle.isSpinning = !isSpinning; // Toggle spinning state
       }
     });
   };
