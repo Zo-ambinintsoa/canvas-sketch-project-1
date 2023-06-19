@@ -58,12 +58,32 @@ const sketch = () => {
     });
   }
 
+  const createShapePath = (shape) => {
+    const { sides, size } = shape;
+
+    const path = new Path2D();
+    const radius = size / 2;
+    const angle = (Math.PI * 2) / sides;
+
+    path.moveTo(radius, 0);
+
+    for (let i = 1; i < sides; i++) {
+      const x = radius * Math.cos(angle * i);
+      const y = radius * Math.sin(angle * i);
+      path.lineTo(x, y);
+    }
+
+    path.closePath();
+
+    return path;
+  };
+
   const drawShape = (context, shape) => {
-    const { x, y, sides, size, directionX, directionY, fillColor, strokeColor, isSpinning, rotation, rotationSpeed } = shape;
+    const { x, y, fillColor, strokeColor, isSpinning, rotation, rotationSpeed } = shape;
 
     // Update x position based on direction
     const speed = 100;
-    const deltaX = directionX * speed / settings.dimensions[0];
+    const deltaX = shape.directionX * speed / settings.dimensions[0];
     shape.x += deltaX;
 
     // Reverse direction if shape hits the canvas borders on the x-axis
@@ -72,7 +92,7 @@ const sketch = () => {
     }
 
     // Update y position based on direction
-    const deltaY = directionY * speed / settings.dimensions[1];
+    const deltaY = shape.directionY * speed / settings.dimensions[1];
     shape.y += deltaY;
 
     // Reverse direction if shape hits the canvas borders on the y-axis
@@ -85,32 +105,18 @@ const sketch = () => {
       shape.rotation += rotationSpeed;
     }
 
-    // Draw shape
-    const radius = size / 2;
-    const angle = (Math.PI * 2) / sides;
+    // Create shape path
+    const shapePath = createShapePath(shape);
 
+    // Draw shape
     context.save();
     context.translate(x, y);
     context.rotate(rotation);
-    context.beginPath();
-    context.moveTo(radius, 0);
-
-    for (let i = 1; i < sides; i++) {
-      const x = radius * Math.cos(angle * i);
-      const y = radius * Math.sin(angle * i);
-      context.lineTo(x, y);
-    }
-
-    context.closePath();
-
-    // Set fill and stroke style
     context.fillStyle = fillColor;
     context.strokeStyle = strokeColor;
     context.lineWidth = 2;
-
-    context.fill();
-    context.stroke();
-
+    context.fill(shapePath);
+    context.stroke(shapePath);
     context.restore();
   };
 
