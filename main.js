@@ -36,25 +36,24 @@ const sketch = () => {
     const y = point[1];
     const sides = random.range(shapeMinSides, shapeMaxSides + 1);
     const size = random.range(shapeMinSize, shapeMaxSize + 1);
-    const directionX = random.pick([-1, 1]);
-    const directionY = random.pick([-1, 1]);
+    const direction = random.pick([-1, 1]);
     const fillColor = random.pick(risoColors).hex;
     const strokeColor = random.pick(risoColors).hex;
     const isSpinning = false;
     const rotationSpeed = random.range(0.1, 0.5);
+    const velocity = [random.range(-1, 1), random.range(-1, 1)];
 
     shapes.push({
-      x,
-      y,
+      position: [x, y],
       sides,
       size,
-      directionX,
-      directionY,
+      direction,
       fillColor,
       strokeColor,
       isSpinning,
       rotation: 0,
       rotationSpeed,
+      velocity,
     });
   }
 
@@ -78,39 +77,44 @@ const sketch = () => {
     return path;
   };
 
-  const drawShape = (context, shape) => {
-    const { x, y, fillColor, strokeColor, isSpinning, rotation, rotationSpeed } = shape;
+  const updateShape = (shape) => {
+    const { position, size, direction, velocity } = shape;
 
-    // Update x position based on direction
-    const speed = 100;
-    const deltaX = shape.directionX * speed / settings.dimensions[0];
-    shape.x += deltaX;
+    // Update position based on velocity
+    const speed = 0.1;
+    position[0] += velocity[0] * speed;
+    position[1] += velocity[1] * speed;
 
-    // Reverse direction if shape hits the canvas borders on the x-axis
-    if (shape.x < shapeRadius || shape.x > settings.dimensions[0] - shapeRadius) {
-      shape.directionX *= -1;
+    // Reverse direction if shape hits the canvas borders
+    const radius = size / 2;
+    const minX = shapeRadius;
+    const maxX = settings.dimensions[0] - shapeRadius;
+    const minY = shapeRadius;
+    const maxY = settings.dimensions[1] - shapeRadius;
+
+    if (position[0] < minX || position[0] > maxX) {
+      velocity[0] *= -1;
     }
 
-    // Update y position based on direction
-    const deltaY = shape.directionY * speed / settings.dimensions[1];
-    shape.y += deltaY;
-
-    // Reverse direction if shape hits the canvas borders on the y-axis
-    if (shape.y < shapeRadius || shape.y > settings.dimensions[1] - shapeRadius) {
-      shape.directionY *= -1;
+    if (position[1] < minY || position[1] > maxY) {
+      velocity[1] *= -1;
     }
 
     // Apply spinning rotation if enabled
-    if (isSpinning) {
-      shape.rotation += rotationSpeed;
+    if (shape.isSpinning) {
+      shape.rotation += shape.rotationSpeed;
     }
+  };
+
+  const drawShape = (context, shape) => {
+    const { position, size, fillColor, strokeColor, rotation } = shape;
 
     // Create shape path
     const shapePath = createShapePath(shape);
 
     // Draw shape
     context.save();
-    context.translate(x, y);
+    context.translate(position[0], position[1]);
     context.rotate(rotation);
     context.fillStyle = fillColor;
     context.strokeStyle = strokeColor;
@@ -124,15 +128,15 @@ const sketch = () => {
     const { offsetX, offsetY } = event;
 
     shapes.forEach((shape) => {
-      const { x, y, isSpinning, size } = shape;
+      const { position, size, isSpinning } = shape;
       const radius = size / 2;
 
       // Check if the click is inside the shape
       if (
-        offsetX >= x - radius &&
-        offsetX <= x + radius &&
-        offsetY >= y - radius &&
-        offsetY <= y + radius
+        offsetX >= position[0] - radius &&
+        offsetX <= position[0] + radius &&
+        offsetY >= position[1] - radius &&
+        offsetY <= position[1] + radius
       ) {
         shape.fillColor = random.pick(risoColors).hex; // Change fill color when clicked
         shape.isSpinning = !isSpinning; // Toggle spinning state
@@ -148,8 +152,9 @@ const sketch = () => {
     // Add event listener to canvas
     context.canvas.addEventListener('click', handleShapeClick);
 
-    // Draw shapes
+    // Update and draw shapes
     shapes.forEach((shape) => {
+      updateShape(shape);
       drawShape(context, shape);
     });
   };
