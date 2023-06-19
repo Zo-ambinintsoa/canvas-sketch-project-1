@@ -1,6 +1,7 @@
 const canvasSketch = require('canvas-sketch');
 const random = require('canvas-sketch-util/random');
 const risoColors = require('riso-colors');
+const poissonDiskSampling = require('poisson-disk-sampling');
 
 const settings = {
   dimensions: [800, 800],
@@ -14,13 +15,25 @@ const sketch = () => {
   const shapeMaxSides = 9;
   const shapeMinSize = 20;
   const shapeMaxSize = 100;
+  const shapeRadius = shapeMaxSize / 2;
 
   const shapes = [];
 
-  // Generate random shapes
+  // Generate random shapes using Poisson Disk Sampling
+  const pds = new poissonDiskSampling({
+    shape: [settings.dimensions[0], settings.dimensions[1]],
+    minDistance: shapeMaxSize,
+    maxDistance: shapeMaxSize * 2,
+    tries: 10,
+  });
+
+  const points = pds.fill();
   for (let i = 0; i < shapeCount; i++) {
-    const x = random.range(shapeMaxSize, settings.dimensions[0] - shapeMaxSize);
-    const y = random.range(shapeMaxSize, settings.dimensions[1] - shapeMaxSize);
+    const point = points.pop();
+    if (!point) break;
+
+    const x = point[0];
+    const y = point[1];
     const sides = random.range(shapeMinSides, shapeMaxSides + 1);
     const size = random.range(shapeMinSize, shapeMaxSize + 1);
     const directionX = random.pick([-1, 1]);
@@ -54,7 +67,7 @@ const sketch = () => {
     shape.x += deltaX;
 
     // Reverse direction if shape hits the canvas borders on the x-axis
-    if (shape.x < size || shape.x > settings.dimensions[0] - size) {
+    if (shape.x < shapeRadius || shape.x > settings.dimensions[0] - shapeRadius) {
       shape.directionX *= -1;
     }
 
@@ -63,7 +76,7 @@ const sketch = () => {
     shape.y += deltaY;
 
     // Reverse direction if shape hits the canvas borders on the y-axis
-    if (shape.y < size || shape.y > settings.dimensions[1] - size) {
+    if (shape.y < shapeRadius || shape.y > settings.dimensions[1] - shapeRadius) {
       shape.directionY *= -1;
     }
 
@@ -90,13 +103,12 @@ const sketch = () => {
 
     context.closePath();
 
-    // Set shape fill style
+    // Set fill and stroke style
     context.fillStyle = fillColor;
-    context.fill();
-
-    // Set shape stroke style
     context.strokeStyle = strokeColor;
     context.lineWidth = 2;
+
+    context.fill();
     context.stroke();
 
     context.restore();
