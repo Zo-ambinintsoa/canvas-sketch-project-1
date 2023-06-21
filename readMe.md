@@ -92,4 +92,13 @@ These dependencies are automatically installed when you run npm install.
 This project is licensed under the MIT License. You can find the license information in the LICENSE file.
 
 ## Credits
-The project was created by [Your Name] and is based on the canvas-sketch library developed by Matt DesLauriers.
+The project was created by Zo ambinintsoa and is based on the canvas-sketch library developed by Matt DesLauriers.
+
+<p align="center">
+    <a href="https://www.linkedin.com/in/zo-ambinintsoa">
+        <img src="https://img.shields.io/badge/LinkedIn-blue?style=flat-square&logo=linkedin" alt="LinkedIn">
+    </a>
+    <a href="mailto:ambinintsoa.business@gmail.com">
+        <img src="https://img.shields.io/badge/Email-blue?style=flat-square&logo=gmail&logoColor=white" alt="e-mail">
+    </a>
+</p>
